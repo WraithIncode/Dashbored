@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow frontend to READ stories and lessons, but NEVER write.
+    // Only the backend Service Account (Admin SDK) can write.
+    match /stories/{storyId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /learn/{lessonId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
