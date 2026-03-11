@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import datetime
 import uuid
 import feedparser
@@ -81,11 +82,22 @@ def stage_1_filter(headlines):
     
     prompt += "\nRespond strictly with a JSON list of integers. Return at most 10 indices, the most impactful ones only."
     
-    response = client.models.generate_content(
-        model='gemini-2.0-flash',
-        contents=prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json")
-    )
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(response_mime_type="application/json")
+            )
+            break
+        except Exception as e:
+            if '429' in str(e) and attempt < 2:
+                wait = 30 * (attempt + 1)
+                print(f"Rate limited. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                print(f"Stage 1 filter failed: {e}")
+                return []
     
     try:
         text = response.text.strip()
