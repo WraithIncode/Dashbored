@@ -80,7 +80,7 @@ def stage_1_filter(headlines):
     for i, h in enumerate(headlines):
         prompt += f"[{i}] {h['source']}: {h['headline']}\n"
     
-    prompt += "\nRespond strictly with a JSON list of integers. Return at most 10 indices, the most impactful ones only."
+    prompt += "\nRespond strictly with a JSON list of integers. Return at most 4 indices, the most impactful ones only."
     
     response = None
     for attempt in range(3):
@@ -112,7 +112,8 @@ def stage_1_filter(headlines):
         if text.startswith("```"):
             text = text[3:-3].strip()
         indices = json.loads(text)
-        result = [headlines[i] for i in indices[:10] if i < len(headlines)]
+        # Cap at 4 to safely stay under the 5 RPM free tier limit for Stage 2
+        result = [headlines[i] for i in indices[:4] if i < len(headlines)]
         print(f"Stage 1 selected {len(result)} articles from {len(headlines)} headlines.")
         return result
     except Exception as e:
@@ -145,11 +146,24 @@ def stage_2_summary(article):
     }}
     """
     
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json")
-    )
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(response_mime_type="application/json")
+            )
+            break
+        except Exception as e:
+            if '429' in str(e) and attempt < 2:
+                wait = 65 * (attempt + 1)  # Wait >60s to reset the 1-minute window
+                print(f"Stage 2 rate limited. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                print(f"Stage 2 summary failed: {e}")
+                return None
+    else:
+        return None  # All retries exhausted
     
     try:
         text = response.text.strip()
@@ -194,9 +208,11 @@ def run_pipeline():
     now = datetime.datetime.now(datetime.timezone.utc)
     expires_at = now + datetime.timedelta(hours=72)
     
-    # 4. Stage 2: 1 Gemini call per filtered article (max 10)
+    # 4. Stage 2: 1 Gemini call per filtered article (max 4, with 15s delay between calls)
     saved = 0
-    for item in filtered:
+    for i, item in enumerate(filtered):
+        if i > 0:
+            time.sleep(15)  # Stay under 5 RPM free tier limit
         summary_data = stage_2_summary(item)
         if summary_data:
             doc_id = str(uuid.uuid4())
