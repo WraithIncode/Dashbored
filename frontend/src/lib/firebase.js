@@ -2,8 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
+if (!import.meta.env.VITE_FIREBASE_API_KEY) {
+  console.error("VITE_FIREBASE_API_KEY is missing! App will fail to load data.");
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIza_MISSING_KEY",
   authDomain: "newsroom-dashbored-26.firebaseapp.com",
   projectId: "newsroom-dashbored-26",
   storageBucket: "newsroom-dashbored-26.firebasestorage.app",
