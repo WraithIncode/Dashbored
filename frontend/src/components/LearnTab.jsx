@@ -36,6 +36,27 @@ function LessonCard({ lesson, initiallyExpanded = false }) {
         <div className="lesson-section-title">Example</div>
         <div className="lesson-section-content">{lesson.example}</div>
       </div>
+
+      {lesson.india_angle && (
+        <div className="lesson-section">
+          <div className="lesson-section-title">🇮🇳 India Angle</div>
+          <div className="lesson-section-content">{lesson.india_angle}</div>
+        </div>
+      )}
+
+      {lesson.key_metrics && (
+        <div className="lesson-section">
+          <div className="lesson-section-title">📊 Key Metrics to Watch</div>
+          <div className="lesson-section-content">{lesson.key_metrics}</div>
+        </div>
+      )}
+
+      {lesson.misconception && (
+        <div className="lesson-section">
+          <div className="lesson-section-title">⚠️ Common Misconception</div>
+          <div className="lesson-section-content">{lesson.misconception}</div>
+        </div>
+      )}
       
       <button 
         style={{ marginTop: '16px', color: 'var(--muted-text)', fontSize: '0.85rem' }} 
@@ -45,6 +66,7 @@ function LessonCard({ lesson, initiallyExpanded = false }) {
       </button>
     </div>
   );
+
 }
 
 function LearnTab({ todayLesson, pastLessons = [] }) {

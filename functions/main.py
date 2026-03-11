@@ -295,8 +295,8 @@ CURRICULUM = [
 ]
 
 def has_lesson_today():
-    """Check if a lesson was already generated in the last 22 hours."""
-    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=22)
+    """Check if a lesson was already generated in the last 11 hours (allows 2 per day)."""
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=11)
     lessons = db.collection("learn").where(
         filter=firestore.FieldFilter("generated_at", ">=", cutoff)
     ).limit(1).stream()
@@ -332,7 +332,10 @@ Respond in valid JSON with exactly this structure:
     "definition": "A precise 2-sentence definition of what this concept is.",
     "how_it_works": "Explain the mechanism — what drives it and how it behaves.",
     "practitioner_use": "How investors, analysts, or policymakers actually use this concept.",
-    "example": "A concrete real-world example from India or global markets."
+    "example": "A concrete real-world example from India or global markets.",
+    "india_angle": "How this concept specifically manifests or matters in the Indian economic context.",
+    "key_metrics": "2-3 specific data points or indicators practitioners track for this concept.",
+    "misconception": "The single most common misunderstanding about this concept, and why it's wrong."
 }}
 """
 
@@ -358,6 +361,9 @@ Respond in valid JSON with exactly this structure:
             "how_it_works": data.get("how_it_works", ""),
             "practitioner_use": data.get("practitioner_use", ""),
             "example": data.get("example", ""),
+            "india_angle": data.get("india_angle", ""),
+            "key_metrics": data.get("key_metrics", ""),
+            "misconception": data.get("misconception", ""),
             "week_number": week_number,
             "generated_at": datetime.datetime.now(datetime.timezone.utc)
         })
