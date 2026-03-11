@@ -82,6 +82,7 @@ def stage_1_filter(headlines):
     
     prompt += "\nRespond strictly with a JSON list of integers. Return at most 10 indices, the most impactful ones only."
     
+    response = None
     for attempt in range(3):
         try:
             response = client.models.generate_content(
@@ -99,15 +100,23 @@ def stage_1_filter(headlines):
                 print(f"Stage 1 filter failed: {e}")
                 return []
     
+    if response is None:
+        print("Stage 1: No response from Gemini.")
+        return []
+
+    print(f"Stage 1 raw response: {response.text[:300]}")
     try:
         text = response.text.strip()
         if text.startswith("```json"):
             text = text[7:-3].strip()
+        if text.startswith("```"):
+            text = text[3:-3].strip()
         indices = json.loads(text)
-        # Hard cap at 10 to limit Stage 2 Gemini calls
-        return [headlines[i] for i in indices[:10] if i < len(headlines)]
+        result = [headlines[i] for i in indices[:10] if i < len(headlines)]
+        print(f"Stage 1 selected {len(result)} articles from {len(headlines)} headlines.")
+        return result
     except Exception as e:
-        print(f"Error parsing filter response: {e}")
+        print(f"Error parsing filter response: {e}. Raw text: {response.text[:200]}")
         return []
 
 def stage_2_summary(article):
@@ -165,7 +174,9 @@ def get_existing_urls():
 def run_pipeline():
     # 1. Fetch Headlines (no API cost - free RSS + 1 NewsData call)
     rss_headlines = fetch_rss_headlines()
+    print(f"RSS: fetched {len(rss_headlines)} headlines.")
     api_headlines = fetch_newsdata_headlines()
+    print(f"NewsData: fetched {len(api_headlines)} headlines.")
     all_headlines = rss_headlines + api_headlines
     
     # 2. Load existing URLs to skip already-processed stories (deduplication)
