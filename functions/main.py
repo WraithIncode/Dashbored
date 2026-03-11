@@ -22,8 +22,11 @@ else:
 db = firestore.client()
 
 # Environment variables (to be set in Firebase Secret Manager or .env)
-NEWSDATA_API_KEY = os.environ.get("NEWSDATA_API_KEY", "pub_b8208bc7dbb44fa48fac5e569a6b11fe")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyDEzXXERneMl45SEOMF038GLu4Uofd3Hc0")
+NEWSDATA_API_KEY = os.environ.get("NEWSDATA_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+if not NEWSDATA_API_KEY or not GEMINI_API_KEY:
+    raise EnvironmentError("Missing required environment variables: NEWSDATA_API_KEY and/or GEMINI_API_KEY")
 
 # Initialize Gemini Client
 client = genai.Client(api_key=GEMINI_API_KEY)
