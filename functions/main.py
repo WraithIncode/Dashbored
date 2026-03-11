@@ -29,8 +29,8 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if not NEWSDATA_API_KEY or not GEMINI_API_KEY:
     raise EnvironmentError("Missing required environment variables: NEWSDATA_API_KEY and/or GEMINI_API_KEY")
 
-# Initialize Gemini Client
-client = genai.Client(api_key=GEMINI_API_KEY)
+# Initialize Gemini Client (force v1 API - gemini-1.5-flash not on v1beta)
+client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1"})
 
 INDIAN_RSS_FEEDS = {
     "The Hindu": "https://www.thehindu.com/business/feed/",
