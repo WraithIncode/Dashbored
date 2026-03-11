@@ -246,5 +246,126 @@ def run_pipeline():
     print(f"Done. Saved {saved} new stories, deleted {deleted} expired stories.")
     print(f"Gemini API calls used this run: {len(filtered) + 1} (1 filter + {len(filtered)} summaries)")
 
+# --- Curated 40-concept curriculum (cycling by day of year) ---
+CURRICULUM = [
+    # MACRO track
+    {"track": "MACRO", "concept": "Repo Rate"},
+    {"track": "MACRO", "concept": "Reverse Repo Rate"},
+    {"track": "MACRO", "concept": "Fiscal Deficit"},
+    {"track": "MACRO", "concept": "Current Account Deficit"},
+    {"track": "MACRO", "concept": "Inflation Targeting"},
+    {"track": "MACRO", "concept": "CPI vs WPI"},
+    {"track": "MACRO", "concept": "GDP Growth Accounting"},
+    {"track": "MACRO", "concept": "Multiplier Effect"},
+    {"track": "MACRO", "concept": "Liquidity Adjustment Facility"},
+    {"track": "MACRO", "concept": "Open Market Operations"},
+    # MARKETS track
+    {"track": "MARKETS", "concept": "P/E Ratio"},
+    {"track": "MARKETS", "concept": "Bond Yield and Price Relationship"},
+    {"track": "MARKETS", "concept": "FII and DII Flows"},
+    {"track": "MARKETS", "concept": "Yield Curve"},
+    {"track": "MARKETS", "concept": "Circuit Breakers in Equity Markets"},
+    {"track": "MARKETS", "concept": "Rupee Carry Trade"},
+    {"track": "MARKETS", "concept": "Mark to Market"},
+    {"track": "MARKETS", "concept": "Futures and Options Basics"},
+    {"track": "MARKETS", "concept": "VIX — Volatility Index"},
+    {"track": "MARKETS", "concept": "Short Selling"},
+    # POLICY track
+    {"track": "POLICY", "concept": "Capital Gains Tax"},
+    {"track": "POLICY", "concept": "GST Structure in India"},
+    {"track": "POLICY", "concept": "FDI vs FPI"},
+    {"track": "POLICY", "concept": "SEBI's Role in Market Regulation"},
+    {"track": "POLICY", "concept": "RBI's Monetary Policy Committee"},
+    {"track": "POLICY", "concept": "Government Capital Expenditure"},
+    {"track": "POLICY", "concept": "PLI Scheme"},
+    {"track": "POLICY", "concept": "India's External Debt"},
+    {"track": "POLICY", "concept": "Sovereign Credit Rating"},
+    {"track": "POLICY", "concept": "FEMA and Capital Controls"},
+    # GLOBAL track
+    {"track": "GLOBAL", "concept": "US Federal Reserve and Its Global Impact"},
+    {"track": "GLOBAL", "concept": "Dollar Index (DXY)"},
+    {"track": "GLOBAL", "concept": "Petrodollar System"},
+    {"track": "GLOBAL", "concept": "IMF Special Drawing Rights"},
+    {"track": "GLOBAL", "concept": "Trade Deficit and Surplus"},
+    {"track": "GLOBAL", "concept": "Purchasing Power Parity"},
+    {"track": "GLOBAL", "concept": "Carbon Credits and Carbon Markets"},
+    {"track": "GLOBAL", "concept": "Semiconductor Supply Chain"},
+    {"track": "GLOBAL", "concept": "De-dollarisation Debate"},
+    {"track": "GLOBAL", "concept": "Sovereign Wealth Funds"},
+]
+
+def has_lesson_today():
+    """Check if a lesson was already generated in the last 22 hours."""
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=22)
+    lessons = db.collection("learn").where(
+        filter=firestore.FieldFilter("generated_at", ">=", cutoff)
+    ).limit(1).stream()
+    return any(True for _ in lessons)
+
+def generate_daily_lesson():
+    """Generate one concept lesson per day and store in Firestore `learn` collection."""
+    if has_lesson_today():
+        print("Lesson already generated today. Skipping.")
+        return
+
+    # Pick today's concept by cycling through the curriculum
+    day_of_year = datetime.datetime.now(datetime.timezone.utc).timetuple().tm_yday
+    entry = CURRICULUM[day_of_year % len(CURRICULUM)]
+    week_number = (day_of_year // 7) + 1
+
+    print(f"Generating lesson: {entry['track']} — {entry['concept']}")
+
+    prompt = f"""
+You are a financial educator writing for a smart Indian reader who understands the news but wants to learn the underlying concepts.
+
+Write a structured lesson on the concept: "{entry['concept']}" (Track: {entry['track']})
+
+Follow these rules:
+- Write for someone who reads The Economist and follows Indian markets.
+- Be precise, analytical, and concise. No filler.
+- Each section should be 2-4 sentences.
+
+Respond in valid JSON with exactly this structure:
+{{
+    "concept_title": "{entry['concept']}",
+    "track": "{entry['track']}",
+    "definition": "A precise 2-sentence definition of what this concept is.",
+    "how_it_works": "Explain the mechanism — what drives it and how it behaves.",
+    "practitioner_use": "How investors, analysts, or policymakers actually use this concept.",
+    "example": "A concrete real-world example from India or global markets."
+}}
+"""
+
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:-3].strip()
+        if text.startswith("```"):
+            text = text[3:-3].strip()
+
+        data = json.loads(text)
+        doc_id = str(uuid.uuid4())
+        db.collection("learn").document(doc_id).set({
+            "id": doc_id,
+            "track": data.get("track", entry["track"]),
+            "concept_title": data.get("concept_title", entry["concept"]),
+            "definition": data.get("definition", ""),
+            "how_it_works": data.get("how_it_works", ""),
+            "practitioner_use": data.get("practitioner_use", ""),
+            "example": data.get("example", ""),
+            "week_number": week_number,
+            "generated_at": datetime.datetime.now(datetime.timezone.utc)
+        })
+        print(f"Lesson saved: {entry['concept']}")
+    except Exception as e:
+        print(f"Lesson generation failed: {e}")
+
 if __name__ == "__main__":
     run_pipeline()
+    time.sleep(15)  # Pause before lesson call to respect rate limits
+    generate_daily_lesson()
