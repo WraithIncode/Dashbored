@@ -14,7 +14,7 @@ function LoginScreen({ onSignIn, deniedUser, onSignOut }) {
     }}>
       <div style={{ marginBottom: '32px' }}>
         <div style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)' }}>
-          Dashbored
+          DASHbored
         </div>
         <div style={{ fontSize: '0.9rem', color: 'var(--muted-text)', marginTop: '6px' }}>
           Your personal intelligence feed

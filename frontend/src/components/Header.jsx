@@ -4,7 +4,7 @@ function Header({ toggleTheme, lastRefresh }) {
   return (
     <header>
       <div className="header-title">
-        <span>Newsroom</span>
+        <span>DASHbored</span>
       </div>
       <div className="header-controls">
         <span className="refresh-indicator">
