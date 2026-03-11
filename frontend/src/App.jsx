@@ -43,7 +43,7 @@ function App() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
         <div style={{ color: 'var(--muted-text)', fontSize: '0.9rem' }}>Loading...</div>
       </div>
     );

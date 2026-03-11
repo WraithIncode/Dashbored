@@ -11,7 +11,7 @@ function TopicFilter({ section, activeTopic, onTopicChange }) {
       {topics.map(topic => (
         <button
           key={topic}
-          className={`pill ${activeTopic === topic || (activeTopic === 'All' && topic === 'All') ? 'active' : ''}`}
+          className={`pill ${activeTopic === (topic === 'All' ? 'All' : topic.toUpperCase()) ? 'active' : ''}`}
           onClick={() => onTopicChange(topic === 'All' ? 'All' : topic.toUpperCase())}
         >
           {topic}
