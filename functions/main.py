@@ -82,7 +82,7 @@ def stage_1_filter(headlines):
     prompt += "\nRespond strictly with a JSON list of integers. Return at most 10 indices, the most impactful ones only."
     
     response = client.models.generate_content(
-        model='gemini-1.5-flash',
+        model='gemini-2.0-flash',
         contents=prompt,
         config=types.GenerateContentConfig(response_mime_type="application/json")
     )
@@ -125,7 +125,7 @@ def stage_2_summary(article):
     """
     
     response = client.models.generate_content(
-        model='gemini-1.5-flash',
+        model='gemini-2.0-flash',
         contents=prompt,
         config=types.GenerateContentConfig(response_mime_type="application/json")
     )
