@@ -87,8 +87,7 @@ def stage_1_filter(headlines):
         try:
             response = client.models.generate_content(
                 model='gemini-1.5-flash',
-                contents=prompt,
-                config=types.GenerateContentConfig(response_mime_type="application/json")
+                contents=prompt
             )
             break
         except Exception as e:
@@ -147,8 +146,7 @@ def stage_2_summary(article):
     
     response = client.models.generate_content(
         model='gemini-1.5-flash',
-        contents=prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json")
+        contents=prompt
     )
     
     try:
