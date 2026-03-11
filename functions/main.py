@@ -71,7 +71,7 @@ def fetch_newsdata_headlines():
         return []
 
 def stage_1_filter(headlines):
-    """Filter headlines using Gemini 1.5 Flash (titles only)"""
+    """Filter headlines using Gemini 1.5 Flash (titles only) - 1 API call total"""
     if not headlines:
         return []
     
@@ -79,7 +79,7 @@ def stage_1_filter(headlines):
     for i, h in enumerate(headlines):
         prompt += f"[{i}] {h['source']}: {h['headline']}\n"
     
-    prompt += "\nRespond strictly with a JSON list of integers."
+    prompt += "\nRespond strictly with a JSON list of integers. Return at most 10 indices, the most impactful ones only."
     
     response = client.models.generate_content(
         model='gemini-1.5-flash',
@@ -88,20 +88,18 @@ def stage_1_filter(headlines):
     )
     
     try:
-        import json
         text = response.text.strip()
         if text.startswith("```json"):
             text = text[7:-3].strip()
         indices = json.loads(text)
-        return [headlines[i] for i in indices if i < len(headlines)]
+        # Hard cap at 10 to limit Stage 2 Gemini calls
+        return [headlines[i] for i in indices[:10] if i < len(headlines)]
     except Exception as e:
         print(f"Error parsing filter response: {e}")
         return []
 
 def stage_2_summary(article):
-    """Generate the structured summary for an article"""
-    # In a real app we'd scrape the full text of `article['url']`.
-    # For cost/speed we'll just ask Gemini to summarize based on the title if full text unavailable.
+    """Generate the structured summary for an article - 1 Gemini API call per article"""
     prompt = f"""
     You are an editorial analyst writing for a single informed reader.
     Your job is to produce a structured summary of this news article based on its headline:
@@ -133,7 +131,6 @@ def stage_2_summary(article):
     )
     
     try:
-        import json
         text = response.text.strip()
         if text.startswith("```json"):
             text = text[7:-3].strip()
@@ -143,19 +140,39 @@ def stage_2_summary(article):
         print(f"Error generating summary: {e}")
         return None
 
+def get_existing_urls():
+    """Fetch all story URLs currently in Firestore to avoid re-processing."""
+    existing = set()
+    docs = db.collection("stories").stream()
+    for doc in docs:
+        url = doc.to_dict().get("url")
+        if url:
+            existing.add(url)
+    return existing
+
 def run_pipeline():
-    # 1. Fetch Headlines
+    # 1. Fetch Headlines (no API cost - free RSS + 1 NewsData call)
     rss_headlines = fetch_rss_headlines()
     api_headlines = fetch_newsdata_headlines()
     all_headlines = rss_headlines + api_headlines
     
-    # 2. Stage 1: Filter
-    filtered = stage_1_filter(all_headlines)
+    # 2. Load existing URLs to skip already-processed stories (deduplication)
+    existing_urls = get_existing_urls()
+    new_headlines = [h for h in all_headlines if h.get("url") not in existing_urls]
+    print(f"Total: {len(all_headlines)} headlines. New (not yet stored): {len(new_headlines)}")
+    
+    if not new_headlines:
+        print("No new stories. Skipping Gemini API calls.")
+        return
+
+    # 3. Stage 1: 1 Gemini call to pick top 10 of all new headlines
+    filtered = stage_1_filter(new_headlines)
     
     now = datetime.datetime.now(datetime.timezone.utc)
     expires_at = now + datetime.timedelta(hours=72)
     
-    # 3. Stage 2: Summarize and Write
+    # 4. Stage 2: 1 Gemini call per filtered article (max 10)
+    saved = 0
     for item in filtered:
         summary_data = stage_2_summary(item)
         if summary_data:
@@ -176,16 +193,19 @@ def run_pipeline():
                 "expires_at": expires_at
             }
             doc_ref.set(doc_data)
+            saved += 1
     
-    # Cleanup expired stories
+    # 5. Cleanup expired stories
     stories_ref = db.collection("stories")
     expired_query = stories_ref.where(filter=firestore.FieldFilter("expires_at", "<", now))
     expired_docs = expired_query.stream()
+    deleted = 0
     for doc in expired_docs:
         doc.reference.delete()
+        deleted += 1
         
-    print(f"Processed and stored {len(filtered)} stories.")
-    # MCP Push happens locally or via a separate script for now, as Cloud Functions can't reach the local IDE MCP.
+    print(f"Done. Saved {saved} new stories, deleted {deleted} expired stories.")
+    print(f"Gemini API calls used this run: {len(filtered) + 1} (1 filter + {len(filtered)} summaries)")
 
 if __name__ == "__main__":
     run_pipeline()
