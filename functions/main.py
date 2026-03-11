@@ -367,9 +367,11 @@ Respond in valid JSON with exactly this structure:
             "week_number": week_number,
             "generated_at": datetime.datetime.now(datetime.timezone.utc)
         })
-        print(f"Lesson saved: {entry['concept']}")
+        print(f"Success: Lesson created for {entry['concept']}")
     except Exception as e:
-        print(f"Lesson generation failed: {e}")
+        print(f"Error in generate_daily_lesson: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     run_pipeline()
