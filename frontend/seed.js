@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, doc, setDoc, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAxiMlx4bNbltnf_utKCRyY1VvWLw9KPns",
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
   authDomain: "newsroom-dashbored-26.firebaseapp.com",
   projectId: "newsroom-dashbored-26",
   storageBucket: "newsroom-dashbored-26.firebasestorage.app",

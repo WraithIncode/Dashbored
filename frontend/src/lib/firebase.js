@@ -3,7 +3,7 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAxiMlx4bNbltnf_utKCRyY1VvWLw9KPns",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "newsroom-dashbored-26.firebaseapp.com",
   projectId: "newsroom-dashbored-26",
   storageBucket: "newsroom-dashbored-26.firebasestorage.app",
