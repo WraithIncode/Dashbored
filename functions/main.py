@@ -80,7 +80,7 @@ def stage_1_filter(headlines):
     for i, h in enumerate(headlines):
         prompt += f"[{i}] {h['source']}: {h['headline']}\n"
     
-    prompt += "\nRespond strictly with a JSON list of integers. Return at most 4 indices, the most impactful ones only."
+    prompt += "\nRespond strictly with a JSON list of integers. Return at most 10 indices, the most impactful ones only."
     
     response = None
     for attempt in range(3):
@@ -112,8 +112,8 @@ def stage_1_filter(headlines):
         if text.startswith("```"):
             text = text[3:-3].strip()
         indices = json.loads(text)
-        # Cap at 4 to safely stay under the 5 RPM free tier limit for Stage 2
-        result = [headlines[i] for i in indices[:4] if i < len(headlines)]
+        # Cap at 10 to utilize the 1-minute reset window for Stage 2
+        result = [headlines[i] for i in indices[:10] if i < len(headlines)]
         print(f"Stage 1 selected {len(result)} articles from {len(headlines)} headlines.")
         return result
     except Exception as e:
@@ -212,7 +212,7 @@ def run_pipeline():
     saved = 0
     for i, item in enumerate(filtered):
         if i > 0:
-            time.sleep(15)  # Stay under 5 RPM free tier limit
+            time.sleep(60)  # Wait 60s between calls to reset 1-minute quota limit
         summary_data = stage_2_summary(item)
         if summary_data:
             doc_id = str(uuid.uuid4())
@@ -375,5 +375,5 @@ Respond in valid JSON with exactly this structure:
 
 if __name__ == "__main__":
     run_pipeline()
-    time.sleep(15)  # Pause before lesson call to respect rate limits
+    time.sleep(60)  # Wait for quota reset before lesson generation
     generate_daily_lesson()
