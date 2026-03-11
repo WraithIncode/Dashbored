@@ -5,11 +5,14 @@ import TopicFilter from './components/TopicFilter';
 import NewsFeed from './components/NewsFeed';
 import LearnTab from './components/LearnTab';
 import ChatPanel from './components/ChatPanel';
+import LoginScreen from './components/LoginScreen';
 import { useStories } from './hooks/useStories';
 import { useLesson } from './hooks/useLesson';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('INDIA'); // 'INDIA', 'INTERNATIONAL', 'LEARN'
+  const { user, authorized, loading: authLoading, signIn, logOut } = useAuth();
+  const [activeTab, setActiveTab] = useState('INDIA');
   const [activeTopic, setActiveTopic] = useState('All');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [lastRefresh, setLastRefresh] = useState('Just now');
@@ -17,8 +20,6 @@ function App() {
   const { stories, loading: storiesLoading } = useStories();
   const { todayLesson, pastLessons, loading: lessonLoading } = useLesson();
 
-  
-  // Basic theme initialization
   useEffect(() => {
     const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -30,8 +31,6 @@ function App() {
   };
 
   useEffect(() => {
-    // Determine which tab has fresher stories conceptually
-    // Here we just update the refresh timestamp
     if (stories.length > 0 && stories[0].fetched_at) {
       const fetchedTime = stories[0].fetched_at.toDate();
       const diffMs = Date.now() - fetchedTime;
@@ -41,6 +40,24 @@ function App() {
       else setLastRefresh(`${mins}m ago`);
     }
   }, [stories]);
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+        <div style={{ color: 'var(--muted-text)', fontSize: '0.9rem' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user || !authorized) {
+    return (
+      <LoginScreen
+        onSignIn={signIn}
+        deniedUser={user && !authorized ? user : null}
+        onSignOut={logOut}
+      />
+    );
+  }
 
   return (
     <div className="container">
@@ -76,7 +93,6 @@ function App() {
         )}
       </main>
 
-      {/* Chat Bar (floating trigger at bottom) */}
       {!isChatOpen && (
         <div className="chat-bar" onClick={() => setIsChatOpen(true)}>
           <div className="chat-input-mock">Ask anything...</div>

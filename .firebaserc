@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "newsroom-dashbored-26"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

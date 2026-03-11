@@ -15,5 +15,13 @@
         "__pycache__"
       ]
     }
-  ]
+  ],
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Dashbored",
+        "supportEmail": "ash74ish47@gmail.com"
+      }
+    }
+  }
 }
