@@ -29,8 +29,8 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if not NEWSDATA_API_KEY or not GEMINI_API_KEY:
     raise EnvironmentError("Missing required environment variables: NEWSDATA_API_KEY and/or GEMINI_API_KEY")
 
-# Initialize Gemini Client (force v1 API - gemini-1.5-flash not on v1beta)
-client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1"})
+# Initialize Gemini Client (use default v1beta API for gemini-2.5-flash)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 INDIAN_RSS_FEEDS = {
     "The Hindu": "https://www.thehindu.com/business/feed/",
@@ -86,8 +86,9 @@ def stage_1_filter(headlines):
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=prompt
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(response_mime_type="application/json")
             )
             break
         except Exception as e:
@@ -145,8 +146,9 @@ def stage_2_summary(article):
     """
     
     response = client.models.generate_content(
-        model='gemini-1.5-flash',
-        contents=prompt
+        model='gemini-2.5-flash',
+        contents=prompt,
+        config=types.GenerateContentConfig(response_mime_type="application/json")
     )
     
     try:
