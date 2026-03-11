@@ -2,14 +2,11 @@ import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 
-// Bootstrap: allow by email until UID is known, then switch to UID
-const ALLOWED_EMAIL = 'ash74ish47@gmail.com';
-const ALLOWED_UID = import.meta.env.VITE_ALLOWED_UID || null;
+const ALLOWED_UID = 'rfmGTTfNicTMeDw0xGXShKzo2eG2';
 
 function isAuthorized(user) {
   if (!user) return false;
-  if (ALLOWED_UID) return user.uid === ALLOWED_UID;
-  return user.email === ALLOWED_EMAIL;
+  return user.uid === ALLOWED_UID;
 }
 
 export function useAuth() {
