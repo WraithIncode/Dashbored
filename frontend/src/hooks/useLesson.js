@@ -10,7 +10,7 @@ export function useLesson() {
   const mockLessons = [];
 
   useEffect(() => {
-    const q = query(collection(db, 'learn'), orderBy('generated_at', 'desc'), limit(10));
+    const q = query(collection(db, 'learn'), orderBy('generated_at', 'desc'), limit(30));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedLessons = [];
       snapshot.forEach(doc => {
