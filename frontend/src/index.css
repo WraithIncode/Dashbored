@@ -211,6 +211,31 @@ header {
   margin-bottom: 6px;
 }
 
+.story-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.story-timestamps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.story-time {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  white-space: nowrap;
+}
+
+.story-time.pub {
+  color: var(--accent);
+}
+
 .story-headline {
   font-size: 1.1rem;
   font-weight: 700;

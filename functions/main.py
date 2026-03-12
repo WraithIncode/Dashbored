@@ -228,6 +228,7 @@ def run_pipeline():
                 "url": item["url"],
                 "summary": summary_data.get("summary", ""),
                 "watch_for": summary_data.get("watch_for", ""),
+                "published_at": item.get("publishedAt"),
                 "fetched_at": now,
                 "expires_at": expires_at
             }
