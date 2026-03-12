@@ -93,7 +93,7 @@ def stage_1_filter(headlines):
             break
         except Exception as e:
             if '429' in str(e) and attempt < 2:
-                wait = 30 * (attempt + 1)
+                wait = 20 * (attempt + 1)  # Wait for quota window to reset
                 print(f"Rate limited. Retrying in {wait}s...")
                 time.sleep(wait)
             else:
@@ -156,7 +156,7 @@ def stage_2_summary(article):
             break
         except Exception as e:
             if '429' in str(e) and attempt < 2:
-                wait = 65 * (attempt + 1)  # Wait >60s to reset the 1-minute window
+                wait = 20 * (attempt + 1)  # Wait for quota window reset
                 print(f"Stage 2 rate limited. Retrying in {wait}s...")
                 time.sleep(wait)
             else:
@@ -212,7 +212,7 @@ def run_pipeline():
     saved = 0
     for i, item in enumerate(filtered):
         if i > 0:
-            time.sleep(60)  # Wait 60s between calls to reset 1-minute quota limit
+            time.sleep(15)  # Wait 15s between calls to match 4 RPM quota
         summary_data = stage_2_summary(item)
         if summary_data:
             doc_id = str(uuid.uuid4())
@@ -380,5 +380,5 @@ Respond in valid JSON with exactly this structure:
 
 if __name__ == "__main__":
     run_pipeline()
-    time.sleep(60)  # Wait for quota reset before lesson generation
+    time.sleep(15)  # Wait for quota reset before lesson generation (4 RPM)
     generate_daily_lesson()
