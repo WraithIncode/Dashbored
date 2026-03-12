@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 
-const ALLOWED_UID = 'rfmGTTfNicTMeDw0xGXShKzo2eG2';
+const ALLOWED_UIDS = [
+  'rfmGTTfNicTMeDw0xGXShKzo2eG2',
+  'HmTyVKaz3UR7EhHVQR0HNaRinBr2',
+  's17MMoqHIddYGHl1D4yKrJPCid73'
+];
 
 function isAuthorized(user) {
   if (!user) return false;
-  return user.uid === ALLOWED_UID;
+  return ALLOWED_UIDS.includes(user.uid);
 }
 
 export function useAuth() {
