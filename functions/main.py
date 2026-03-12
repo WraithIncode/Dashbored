@@ -294,23 +294,28 @@ CURRICULUM = [
     {"track": "GLOBAL", "concept": "Sovereign Wealth Funds"},
 ]
 
-def has_lesson_today():
-    """Check if a lesson was already generated in the last 11 hours (allows 2 per day)."""
-    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=11)
+def has_lesson_recently():
+    """Check if a lesson was already generated in the last 5 hours (allows 4 per day)."""
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
     lessons = db.collection("learn").where(
         filter=firestore.FieldFilter("generated_at", ">=", cutoff)
     ).limit(1).stream()
     return any(True for _ in lessons)
 
 def generate_daily_lesson():
-    """Generate one concept lesson per day and store in Firestore `learn` collection."""
-    if has_lesson_today():
-        print("Lesson already generated today. Skipping.")
+    """Generate one concept lesson every ~6 hours and store in Firestore `learn` collection."""
+    if has_lesson_recently():
+        print("Lesson already generated recently. Skipping.")
         return
 
-    # Pick today's concept by cycling through the curriculum
-    day_of_year = datetime.datetime.now(datetime.timezone.utc).timetuple().tm_yday
-    entry = CURRICULUM[day_of_year % len(CURRICULUM)]
+    # Pick concept by cycling through the curriculum based on day and quarter of day
+    now = datetime.datetime.now(datetime.timezone.utc)
+    day_of_year = now.timetuple().tm_yday
+    hour = now.hour
+    quarter_of_day = hour // 6  # 0, 1, 2, or 3
+    
+    index = (day_of_year * 4 + quarter_of_day) % len(CURRICULUM)
+    entry = CURRICULUM[index]
     week_number = (day_of_year // 7) + 1
 
     print(f"Generating lesson: {entry['track']} — {entry['concept']}")
