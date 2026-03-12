@@ -374,6 +374,10 @@ body[data-theme='dark'] .chat-panel {
   padding: 4px;
 }
 
+[data-theme='dark'] .chat-close {
+  color: #FFFFFF;
+}
+
 .chat-history {
   flex: 1;
   overflow-y: auto;
