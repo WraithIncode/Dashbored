@@ -77,7 +77,7 @@ function App() {
         )}
       </div>
       
-      <main className="feed">
+      <main className={`feed ${activeTab !== 'LEARN' ? 'with-filters' : ''}`}>
         {activeTab === 'LEARN' ? (
           lessonLoading ? (
             <div style={{ textAlign: 'center', padding: '32px' }}>Loading...</div>

@@ -248,13 +248,13 @@ header {
 
 /* Feed & Stories */
 .feed {
-  padding-top: 100px; /* Space for fixed top navigation (header + filters) */
+  padding-top: 48px; /* Default for tabs without filters (Header only) */
   padding-bottom: 80px; /* Space for bottom navigation */
 }
 
-/* Adjust padding when TopicFilter is absent (LEARN tab) */
-.container:has(.top-nav:not(:has(.topic-filters))) .feed {
-  padding-top: 48px;
+/* Add extra space when TopicFilter is present */
+.feed.with-filters {
+  padding-top: 100px;
 }
 
 .story-card {
