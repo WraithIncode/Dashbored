@@ -4,7 +4,7 @@ import TabBar from './components/TabBar';
 import TopicFilter from './components/TopicFilter';
 import NewsFeed from './components/NewsFeed';
 import LearnTab from './components/LearnTab';
-import ChatPanel from './components/ChatPanel';
+
 import LoginScreen from './components/LoginScreen';
 import { useStories } from './hooks/useStories';
 import { useLesson } from './hooks/useLesson';
@@ -12,9 +12,8 @@ import { useAuth } from './hooks/useAuth';
 
 function App() {
   const { user, authorized, loading: authLoading, signIn, logOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('INDIA');
-  const [activeTopic, setActiveTopic] = useState('All');
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [theme, setTheme] = useState('light');
+
   const [lastRefresh, setLastRefresh] = useState('Just now');
   
   const { stories, loading: storiesLoading } = useStories();
@@ -22,12 +21,15 @@ function App() {
 
   useEffect(() => {
     const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    const initialTheme = isDark ? 'dark' : 'light';
+    setTheme(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
   }, []);
 
   const toggleTheme = () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    document.documentElement.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
   };
 
   useEffect(() => {
@@ -40,6 +42,9 @@ function App() {
       else setLastRefresh(`${mins}m ago`);
     }
   }, [stories]);
+
+  const [activeTab, setActiveTab] = useState('INDIA');
+  const [activeTopic, setActiveTopic] = useState('All');
 
   if (authLoading) {
     return (
@@ -61,17 +66,16 @@ function App() {
 
   return (
     <div className="container">
-      <Header toggleTheme={toggleTheme} lastRefresh={lastRefresh} />
-      
-      <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      {activeTab !== 'LEARN' && (
-        <TopicFilter 
-          section={activeTab} 
-          activeTopic={activeTopic} 
-          onTopicChange={setActiveTopic} 
-        />
-      )}
+      <div className="top-nav">
+        <Header theme={theme} toggleTheme={toggleTheme} lastRefresh={lastRefresh} />
+        {activeTab !== 'LEARN' && (
+          <TopicFilter 
+            section={activeTab} 
+            activeTopic={activeTopic} 
+            onTopicChange={setActiveTopic} 
+          />
+        )}
+      </div>
       
       <main className="feed">
         {activeTab === 'LEARN' ? (
@@ -87,29 +91,31 @@ function App() {
             <NewsFeed 
               section={activeTab} 
               topicFilter={activeTopic} 
-              stories={stories.filter(s => s.section === activeTab && (activeTopic === 'All' || s.topic_tag === activeTopic))} 
+              stories={stories.filter(s => {
+                if (s.section !== activeTab) return false;
+                if (activeTopic === 'All') return true;
+                if (s.topic_tag === activeTopic) return true;
+                
+                // Flexible matching for broader categories
+                if (activeTopic === 'ECONOMY') {
+                  return ['CAPEX', 'FISCAL', 'MARKETS', 'MONETARY', 'EARNINGS'].includes(s.topic_tag);
+                }
+                if (activeTopic === 'GEOPOLITICS') {
+                  return ['INDIA-FOREIGN'].includes(s.topic_tag);
+                }
+                if (activeTopic === 'GLOBAL-ECON') {
+                  return ['WORLD-ECON'].includes(s.topic_tag);
+                }
+                
+                return false;
+              })} 
             />
           )
         )}
       </main>
 
-      {!isChatOpen && (
-        <div className="chat-bar" onClick={() => setIsChatOpen(true)}>
-          <div className="chat-input-mock">Ask anything...</div>
-          <div className="chat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5"></line>
-              <polyline points="5 12 12 5 19 12"></polyline>
-            </svg>
-          </div>
-        </div>
-      )}
 
-      <ChatPanel 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
-        contextStories={stories} 
-      />
+      <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }

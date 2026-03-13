@@ -22,18 +22,21 @@ def check_data():
     
     # Check Stories
     stories_ref = db.collection("stories")
-    stories_count = len(list(stories_ref.limit(10).stream()))
-    print(f"Stories (first 10): {stories_count} documents found.")
+    stories = list(stories_ref.limit(20).stream())
+    print(f"Stories (sampled {len(stories)}):")
+    for s in stories:
+        data = s.to_dict()
+        print(f"- [{data.get('section')}] {data.get('topic_tag')}: {data.get('headline')[:50]}...")
     
-    # Check Learn
-    learn_ref = db.collection("learn")
-    learn_count = len(list(learn_ref.limit(10).stream()))
-    print(f"Learn (first 10): {learn_count} documents found.")
-    
-    if learn_count == 0:
-        print("WARNING: 'learn' collection is empty!")
-    else:
-        print("Success: 'learn' collection has data.")
+    # Check current distribution
+    all_stories = stories_ref.stream()
+    tags = {}
+    for s in all_stories:
+        tag = s.to_dict().get('topic_tag', 'MISSING')
+        tags[tag] = tags.get(tag, 0) + 1
+    print("\nTag distribution:")
+    for tag, count in tags.items():
+        print(f"  {tag}: {count}")
 
 if __name__ == "__main__":
     check_data()

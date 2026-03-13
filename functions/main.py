@@ -76,7 +76,7 @@ def stage_1_filter(headlines):
     if not headlines:
         return []
     
-    prompt = "Filter the following news headlines. Return only the array indices (0-based) of stories that are highly relevant to: Indian Economy, Govt Capex, Fiscal Policy, RBI, Geopolitics, US-China relations, Global Macroeconomics, Climate Change, or AI Research.\n\nHeadlines:\n"
+    prompt = "Filter the following news headlines. Return only the array indices (0-based) of stories that are highly relevant to: Indian Economy, Govt Capex, Fiscal Policy, RBI, Capital Markets, Equities/Shares, Crypto/Blockchain, Geopolitics, US-China relations, Global Macroeconomics, Climate Change, or AI Research.\n\nHeadlines:\n"
     for i, h in enumerate(headlines):
         prompt += f"[{i}] {h['source']}: {h['headline']}\n"
     
@@ -86,14 +86,14 @@ def stage_1_filter(headlines):
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-3.1-flash-lite-preview',
                 contents=prompt,
                 config=types.GenerateContentConfig(response_mime_type="application/json")
             )
             break
         except Exception as e:
             if '429' in str(e) and attempt < 2:
-                wait = 65 * (attempt + 1)  # Sufficient gap to reset window
+                wait = 10  # Reduced wait for Lite model
                 print(f"Rate limited. Retrying in {wait}s...")
                 time.sleep(wait)
             else:
@@ -139,7 +139,7 @@ def stage_2_summary(article):
     Respond in valid JSON with exactly this format:
     {{
         "section": "INDIA or INTERNATIONAL",
-        "topic_tag": "CAPEX/FISCAL/MARKETS/MONETARY/EARNINGS/GEOPOLITICS/INDIA-FOREIGN/GLOBAL-ECON/CLIMATE/AI-RESEARCH",
+        "topic_tag": "POLITICS/TECH/ECONOMY/CAPITAL-MARKETS/EQUITIES/CRYPTO/CAPEX/FISCAL/MARKETS/MONETARY/EARNINGS/GEOPOLITICS/INDIA-FOREIGN/GLOBAL-ECON/CLIMATE/AI-RESEARCH",
         "display_label": "Human readable label",
         "summary": "1 paragraph summary",
         "watch_for": "The forward looking watch point"
@@ -149,14 +149,14 @@ def stage_2_summary(article):
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-3.1-flash-lite-preview',
                 contents=prompt,
                 config=types.GenerateContentConfig(response_mime_type="application/json")
             )
             break
         except Exception as e:
             if '429' in str(e) and attempt < 2:
-                wait = 65 * (attempt + 1)  # Sufficient gap to reset window
+                wait = 10
                 print(f"Stage 2 rate limited. Retrying in {wait}s...")
                 time.sleep(wait)
             else:
@@ -212,7 +212,7 @@ def run_pipeline():
     saved = 0
     for i, item in enumerate(filtered):
         if i > 0:
-            time.sleep(60)  # Wait 1 min between calls as requested for stability
+            time.sleep(5)  # Flash Lite is faster, 5s delay is plenty
         summary_data = stage_2_summary(item)
         if summary_data:
             doc_id = str(uuid.uuid4())
@@ -295,18 +295,22 @@ CURRICULUM = [
     {"track": "GLOBAL", "concept": "Sovereign Wealth Funds"},
 ]
 
-def has_lesson_recently():
-    """Check if a lesson was already generated in the last 5 hours (allows 4 per day)."""
-    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
+def has_lesson_in_current_window():
+    """Check if a lesson was already generated in the current 6-hour UTC window."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    # Windows: 00-06, 06-12, 12-18, 18-00 UTC
+    window_start_hour = (now.hour // 6) * 6
+    window_start = now.replace(hour=window_start_hour, minute=0, second=0, microsecond=0)
+    
     lessons = db.collection("learn").where(
-        filter=firestore.FieldFilter("generated_at", ">=", cutoff)
+        filter=firestore.FieldFilter("generated_at", ">=", window_start)
     ).limit(1).stream()
     return any(True for _ in lessons)
 
 def generate_daily_lesson():
     """Generate one concept lesson every ~6 hours and store in Firestore `learn` collection."""
-    if has_lesson_recently():
-        print("Lesson already generated recently. Skipping.")
+    if has_lesson_in_current_window():
+        print("Lesson already generated for this 6-hour window. Skipping.")
         return
 
     # Pick concept by cycling through the curriculum based on day and quarter of day
@@ -347,7 +351,7 @@ Respond in valid JSON with exactly this structure:
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.1-flash-lite-preview',
             contents=prompt,
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
